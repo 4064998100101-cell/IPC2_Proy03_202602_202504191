@@ -24,7 +24,7 @@ namespace BackendSAT.Models
             string dd=fechaemision.ToString("dd");
             string secuencial=correlativoDia.ToString("D8");
             
-            CodigoAutorizacion=$"{yyy}{mm}{dd}{secuencial}";
+            CodigoAutorizacion=$"{yyyy}{mm}{dd}{secuencial}";
         }
     }
 }
