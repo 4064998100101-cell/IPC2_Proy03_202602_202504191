@@ -155,6 +155,82 @@ namespace BackendSAT.Controllers
             BaseDatosLocal.ResetearTodo();
             return Ok(new { mensaje = "Sistema reseteado correctamente al estado inicial." });
         }
+
+    
+[HttpGet("ConsultaDatos")]
+       [HttpGet("ConsultaDatos")]
+        public IActionResult ConsultarDatos([FromQuery] string nit, [FromQuery] string tipo, [FromQuery] string fechaInicio, [FromQuery] string fechaFin)
+        {
+            // tipo: "emitidas" o "recibidas"
+            DateTime inicio = DateTime.ParseExact(fechaInicio, "dd/MM/yyyy", CultureInfo.InvariantCulture);
+            DateTime fin = DateTime.ParseExact(fechaFin, "dd/MM/yyyy", CultureInfo.InvariantCulture);
+
+            var facturasFiltradas = BaseDatosLocal.FacturasAutorizadas.Where(f => {
+                // Lógica de filtrado por fechas y NIT
+                return true; 
+            }).ToList();
+
+            // Retornar la respuesta en formato JSON mediante Ok()
+            return Ok(facturasFiltradas);
+        }
+
+    
+        [HttpGet("ResumenIva")]
+        public IActionResult ResumenIva([FromQuery] string fecha)
+        {
+           
+            var movimientosNit = new Dictionary<string, (decimal ivaEmitido, decimal ivaRecibido)>();
+
+            foreach (var factura in BaseDatosLocal.FacturasAutorizadas)
+            {
+           
+                if (factura.Tiempo.Contains(fecha))
+                {
+                 
+                    if (!movimientosNit.ContainsKey(factura.NitEmisor))
+                        movimientosNit[factura.NitEmisor] = (0, 0);
+                    
+                    var currentEmisor = movimientosNit[factura.NitEmisor];
+                    movimientosNit[factura.NitEmisor] = (currentEmisor.ivaEmitido + factura.Iva, currentEmisor.ivaRecibido);
+
+                    if (!movimientosNit.ContainsKey(factura.NitReceptor))
+                        movimientosNit[factura.NitReceptor] = (0, 0);
+                    
+                    var currentReceptor = movimientosNit[factura.NitReceptor];
+                    movimientosNit[factura.NitReceptor] = (currentReceptor.ivaEmitido, currentReceptor.ivaRecibido + factura.Iva);
+                }
+            }
+
+            var resultado = movimientosNit.Select(kv => new {
+                NIT = kv.Key,
+                IvaEmitido = kv.Value.ivaEmitido,
+                IvaRecibido = kv.Value.ivaRecibido
+            });
+
+            return Ok(resultado);
+        }
+        [HttpGet("ResumenRango")]
+        public IActionResult ResumenRango([FromQuery] string fechaInicio, [FromQuery] string fechaFin, [FromQuery] bool sinIva)
+        {
+           
+            var resumenPorFecha = new Dictionary<string, decimal>();
+
+            foreach (var factura in BaseDatosLocal.FacturasAutorizadas)
+            {
+                decimal monto = sinIva ? factura.Valor : factura.Total;
+             
+            }
+
+            return Ok(resumenPorFecha);
+        }
+
+        
+        [HttpGet("Grafica")]
+        public IActionResult ObtenerDatosGrafica([FromQuery] string tipoResumen)
+        {
+            
+            return Ok(new { mensaje = "Datos preparados para la gráfica" });
+        }
     }
     public class ContribuyenteRequest
     {
@@ -170,5 +246,6 @@ namespace BackendSAT.Controllers
         public string NIT_RECEPTOR { get; set; }
         public decimal VALOR { get; set; }
     }
+   
     
 }
