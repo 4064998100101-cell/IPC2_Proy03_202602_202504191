@@ -12,7 +12,7 @@ namespace BackendSAT.Services
         private static string ultimoDiaCorrelativo=string.Empty;
         private static int contadordiario=0;
 
-        public static int ObtenerSiguienteCorrelatino(DateTime fecha)
+        public static int ObtenerSiguienteCorrelativo(DateTime fecha)
         {
             string diaActual=fecha.ToString("yyyyMMdd");
             if(ultimoDiaCorrelativo != diaActual)

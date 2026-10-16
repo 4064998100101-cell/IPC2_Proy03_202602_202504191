@@ -1,5 +1,8 @@
 var builder = WebApplication.CreateBuilder(args);
 
+// 1. AGREGA ESTA LÍNEA para habilitar los controladores
+builder.Services.AddControllers();
+
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
@@ -13,6 +16,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// 2. AGREGA ESTA LÍNEA para que la aplicación reconozca las rutas de tus controladores (como /api/Procesar)
+app.MapControllers();
 
 var summaries = new[]
 {
