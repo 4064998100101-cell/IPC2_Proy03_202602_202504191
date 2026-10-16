@@ -158,18 +158,6 @@ namespace BackendSAT.Controllers
             return Ok(new { mensaje = "Sistema reseteado correctamente al estado inicial." });
         }
 
-        [HttpGet("ConsultaDatos")]
-        public IActionResult ConsultarDatos([FromQuery] string nit, [FromQuery] string tipo, [FromQuery] string fechaInicio, [FromQuery] string fechaFin)
-        {
-            DateTime inicio = DateTime.ParseExact(fechaInicio, "dd/MM/yyyy", CultureInfo.InvariantCulture);
-            DateTime fin = DateTime.ParseExact(fechaFin, "dd/MM/yyyy", CultureInfo.InvariantCulture);
-
-            var facturasFiltradas = BaseDatosLocal.FacturasAutorizadas.Where(f => {
-                return true; 
-            }).ToList();
-
-            return Ok(facturasFiltradas);
-        }
 
         [HttpGet("ResumenIva")]
         public IActionResult ResumenIva([FromQuery] string fecha)
@@ -203,18 +191,7 @@ namespace BackendSAT.Controllers
             return Ok(resultado);
         }
 
-        [HttpGet("ResumenRango")]
-        public IActionResult ResumenRango([FromQuery] string fechaInicio, [FromQuery] string fechaFin, [FromQuery] bool sinIva)
-        {
-            var resumenPorFecha = new Dictionary<string, decimal>();
 
-            foreach (var factura in BaseDatosLocal.FacturasAutorizadas)
-            {
-                decimal monto = sinIva ? factura.Valor : factura.Total;
-            }
-
-            return Ok(resumenPorFecha);
-        }
 
         [HttpGet("Grafica")]
         public IActionResult ObtenerDatosGrafica([FromQuery] string tipoResumen)
@@ -266,48 +243,53 @@ namespace BackendSAT.Controllers
         return BadRequest(new { error = "Error en los parámetros de fecha. Use el formato dd/MM/yyyy. Detalle: " + ex.Message });
     }
 }
+[HttpGet("ResumenRango")]
+public IActionResult ResumenRango([FromQuery] string fechaInicio, [FromQuery] string fechaFin, [FromQuery] bool sinIva)
+{
+    try
+    {
+        DateTime inicio = DateTime.ParseExact(fechaInicio, "dd/MM/yyyy", CultureInfo.InvariantCulture);
+        DateTime fin = DateTime.ParseExact(fechaFin, "dd/MM/yyyy", CultureInfo.InvariantCulture);
 
+        var resumenPorFecha = new Dictionary<string, decimal>();
 
-        [HttpGet("ResumenRango")]
-        public IActionResult ResumenTango([FromQuery] string fechaInicio, [FromQuery] string fechaFin, [FromQuery] bool sinIva)
+        foreach (var factura in BaseDatosLocal.FacturasAutorizadas)
         {
-            try
+            string fechaStr = factura.Tiempo;
+            if (fechaStr.Contains(","))
             {
-                DateTime inicio=DateTime.ParseExact(fechaInicio, "dd/MM/yyyy", CultureInfo.InvariantCulture);
-                DateTime fin=DateTime.ParseExact(fechaFin, "dd/MM/yyyy", CultureInfo.InvariantCulture);
-                var resumenPorFecha=new Dictionary<string, decimal>();
-                foreach(var factura in BaseDatosLocal.FacturasAutorizadas)
-                {
-                    string fechaStr=factura.Tiempo;
-                    if(fechaStr.Contains(","))
-                    {
-                        fechaStr=fechaStr.Split(',')[1].Trim();
-                    }
-                    fechaStr=fechaStr.Split(' ')[0];
-
-                    if(DateTime.TryParseExact(fechaStr, "dd/MM/yyyy",CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime fechaFactura))
-                    {
-                        if(fechaFactura>=inicio && fechaFactura<=fin)
-                        {
-                            decimal monto=sinIva ? factura.Valor:factura.Total;
-                            if(!resumenPorFecha.ContainsKey(fechaStr))
-                            {
-                                resumenPorFecha[fechaStr]=0;
-                            }
-                            resumenPorFecha[fechaStr]+=monto;
-                        }
-                    }
-
-                }
-                var resultadoOrdenado=resumenPorFecha.OrderBy(x=> DateTime.ParseExact(x.Key, "dd/MM/yyyy", CultureInfo.InvariantCulture)).ToDictionary(k=> k.Key, v=>v.Value);
-                return DayOfWeek(resultadoOrdenado);
+                fechaStr = fechaStr.Split(',')[1].Trim();
             }
-            catch (Exception ex)
-           {
-             return BadRequest(new { error = ex.Message });
-              }
+            fechaStr = fechaStr.Split(' ')[0]; // Obtener "dd/MM/yyyy"
+
+            if (DateTime.TryParseExact(fechaStr, "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime fechaFactura))
+            {
+                if (fechaFactura >= inicio && fechaFactura <= fin)
+                {
+                    decimal monto = sinIva ? factura.Valor : factura.Total;
+
+                    if (!resumenPorFecha.ContainsKey(fechaStr))
+                    {
+                        resumenPorFecha[fechaStr] = 0;
+                    }
+                    resumenPorFecha[fechaStr] += monto;
+                }
+            }
         }
-    
+
+        // Formatear salida ordenada por fecha si se desea
+        var resultadoOrdenado = resumenPorFecha.OrderBy(x => DateTime.ParseExact(x.Key, "dd/MM/yyyy", CultureInfo.InvariantCulture))
+                                               .ToDictionary(k => k.Key, v => v.Value);
+
+        return Ok(resultadoOrdenado);
+    }
+     catch (Exception ex)
+    {
+        return BadRequest(new { error = ex.Message });
+    }
+}
+
+
     }
     
     
